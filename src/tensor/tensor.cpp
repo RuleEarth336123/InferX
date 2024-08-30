@@ -1,5 +1,7 @@
 #include "tensor/tensor.h"
 #include <iostream>
+#include <algorithm>
+#include <numeric>
 /**
  * 构造一个Tensor对象。
  *

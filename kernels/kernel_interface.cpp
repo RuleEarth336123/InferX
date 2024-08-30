@@ -1,4 +1,5 @@
 #include "kernel_interface.h"
+#include <armadillo>
 #include <iostream>
 
 kernel::AddKernel kernel::get_add_kernel(base::DeviceType device_type)

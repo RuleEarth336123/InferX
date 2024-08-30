@@ -2,7 +2,7 @@
 #define TENSOR_H_TENSOR
 
 #include "glog/logging.h"
-#include <armadillo>
+//#include <armadillo>
 #include <memory>
 #include <vector>
 #include "base/base.h"

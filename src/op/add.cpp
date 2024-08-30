@@ -1,6 +1,7 @@
 #include "op/add.h"
 #include "cpu/add_kernel.h"
 #include "kernel_interface.h"
+#include <iostream>
 op::VecAddLayer::VecAddLayer(base::DeviceType device_type)
     : Layer(device_type,LayerType::kLayerAdd,"Add")
 {
