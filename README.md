@@ -1,28 +1,19 @@
 <div id="top"></div>
-<div align="center">
- <img alt="inferx" height="200px" src="res/ico.png">
-</div>
-<!-- 项目 LOGO -->
-<br />
-<div align="center">
-  <a href="https://github.com/othneildrew/Best-README-Template">
-   
-  </a>
-
-  <h3 align="center">InferX</h3>
-
-  <p align="center">
-    异构平台大模型推理框架
-    <br />
-    <a href="https://github.com/othneildrew/Best-README-Template"><strong>浏览文档 »</strong></a>
-    <br />
-    <br />
+<div style="display: flex; justify-content: flex-start; align-items: center;">
+  <img alt="inferx" height="200px" src="res/ico.png" style="margin-right: 30px;">
+  <div>
+    <h3>InferX</h3>
+    <p>异构平台大模型推理框架</p>
+    <br>
+    <a href="https://github.com/othneildrew/Best-README-Template"><strong>浏览文档  »</strong></a>
+    <br>
+    <br>
     <a href="https://github.com/othneildrew/Best-README-Template">查看 Demo</a>
     ·
     <a href="https://github.com/othneildrew/Best-README-Template/issues">反馈 Bug</a>
     ·
     <a href="https://github.com/othneildrew/Best-README-Template/issues">请求新功能</a>
-  </p>
+  </div>
 </div>
 
 
