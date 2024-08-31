@@ -1,27 +1,7 @@
 <div id="top"></div>
-<!--
-*** 感谢查看我们的最佳 README 模板，如果你有好的建议，请复刻（fork）本仓库并且创建一个
-*** 拉取请求（pull request），或者直接创建一个带「enhancement」标签的议题（issue）。
-*** 不要忘记给该项目点一个 star！
-*** 再次感谢！现在快去创建一些了不起的东西吧！:D
--->
-
-<!-- 项目 SHIELDS -->
-<!--
-*** 我们使用了 markdown 「参考风格」的链接以便于阅读。
-*** 参考链接是用方括号 [ ] 包围起来的，而非 圆括号 ( )。
-*** 请到文档末尾查看 contributors-url、forks-url 等变量的声明。这是一种可选的简洁语法，你可能会想要使用。
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
-
-
+<div align="center">
+ <img alt="inferx" height="200px" src="res/ico.png">
+</div>
 <!-- 项目 LOGO -->
 <br />
 <div align="center">
@@ -29,10 +9,10 @@
    
   </a>
 
-  <h3 align="center">Llama-Inference</h3>
+  <h3 align="center">InferX</h3>
 
   <p align="center">
-    异构平台下的大模型推理框架
+    异构平台大模型推理框架
     <br />
     <a href="https://github.com/othneildrew/Best-README-Template"><strong>浏览文档 »</strong></a>
     <br />
@@ -80,15 +60,7 @@
 
 [![产品截图][product-screenshot]](https://example.com)
 
-大语言模型推理框架的异构实现
-
-使用cpp11和cuda实现cpu amd架构和nv gpu的跨平台推理
-
-- 支持多种模型格式bin
-- 支持多线程推理
-- 支持动态输入输出
-- 支持cuda和cpu的混合推理
-
+大语言模型推理框架的异构实现，可在amd架构和nvidia gpu的加速推理,支持windows、linux以及android跨平台编译，可满足大模型端侧推理的需求
 
 <p align="right">(<a href="#top">返回顶部</a>)</p>
 
@@ -194,6 +166,74 @@ _下面是一个指导你的受众如何安装和配置你的应用的例子。�
 _转到 [文档](https://example.com) 查看更多示例_
 
 <p align="right">(<a href="#top">返回顶部</a>)</p>
+
+## 客户端使用
+
+### restful api
+
+```
+curl http://localhost:11434/api/chat -d '{
+  "model": "llama3.1",
+  "messages": [
+    { "role": "user", "content": "why is the sky blue?" }
+  ]
+}'
+```
+
+### openai
+
+```
+from openai import OpenAI
+
+client = OpenAI(
+    base_url='http://localhost:11434/v1/',
+
+    # required but ignored
+    api_key='ollama',
+)
+
+chat_completion = client.chat.completions.create(
+    messages=[
+        {
+            'role': 'user',
+            'content': 'Say this is a test',
+        }
+    ],
+    model='llama3',
+)
+
+response = client.chat.completions.create(
+    model="llava",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What's in this image?"},
+                {
+                    "type": "image_url",
+                    "image_url": "iVBORw0KGgoAAAANSUhEUgAAAG0AAABmCAYAAADBPx
+                }
+            ],
+        }
+    ],
+    max_tokens=300,
+)
+
+completion = client.completions.create(
+    model="llama3",
+    prompt="Say this is a test",
+)
+
+list_completion = client.models.list()
+
+model = client.models.retrieve("llama3")
+
+embeddings = client.embeddings.create(
+    model="all-minilm",
+    input=["why is the sky blue?", "why is the grass green?"],
+)
+```
+
 
 
 
