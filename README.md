@@ -1,6 +1,6 @@
 <div id="top"></div>
 <div style="display: flex; justify-content: flex-start; align-items: center;">
-  <img alt="inferx" height="200px" src="res/ico.png" style="margin-right: 30px;">
+  <img alt="inferx" height="200px" src="res/ico.png" style="margin-right: 50px;">
   <div>
     <h3>InferX</h3>
     <p>异构平台大模型推理框架</p>
