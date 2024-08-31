@@ -9,7 +9,6 @@
 #include "cpu/emb_kernel.h"
 #include "cpu/scale_kernel.h"
 #include "cpu/softmax_kernel.h"
-
 #include <functional>
 
 namespace kernel{

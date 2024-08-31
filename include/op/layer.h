@@ -27,6 +27,7 @@ namespace op{
         explicit BaseLayer(base::DeviceType device_type, LayerType layer_type, base::DataType data_type,
                      std::string layer_name = "");
 
+        virtual ~BaseLayer(){}
         base::DataType data_type() const;
 
         LayerType layer_type() const;

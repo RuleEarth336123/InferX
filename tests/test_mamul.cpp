@@ -30,9 +30,9 @@ TEST(MatmulKernelCPUTest, InputAndWeight) {
 
     kernel::get_matmul_kernel(base::DeviceType::kDeviceCPU)(input, weight, output, 1.0f);
     
-    for(int i=0;i< 2*2;i++){
-        std::cout << output.index<float>(i) << " ";
-    }
+    // for(int i=0;i< 2*2;i++){
+    //     std::cout << output.index<float>(i) << " ";
+    // }
 }
 
 TEST(MatmulKernelCPUTest, InputAndWeight2) {
@@ -62,9 +62,9 @@ TEST(MatmulKernelCPUTest, InputAndWeight2) {
 
     kernel::get_matmul_kernel(base::DeviceType::kDeviceCPU)(input, weight, output, 1.0f);
     
-    for(int i=0;i< 1*3;i++){
-        std::cout << output.index<float>(i) << " ";
-    }
+    // for(int i=0;i< 1*3;i++){
+    //     std::cout << output.index<float>(i) << " ";
+    // }
 
     //(1,1)*[] = []
 }

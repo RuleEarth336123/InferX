@@ -73,3 +73,15 @@ kernel::ScaleSumKernel kernel::get_scale_sum_kernel(base::DeviceType device_type
     }
      return nullptr;
 }
+
+kernel::SoftmaxInplaceKernel kernel::get_softmax_inplace_kernel(base::DeviceType device_type)
+{
+    if (device_type == base::DeviceType::kDeviceCPU) {
+        return softmax_inplace_cpu;
+    } else if (device_type == base::DeviceType::kDeviceCUDA) {
+       ;
+    } else {
+        //std::cerr << "Unknown device type for get a add kernel." << std::end;
+    }
+     return nullptr;
+}

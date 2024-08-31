@@ -31,9 +31,9 @@ TEST(test_add, add_align1) {
 
   kernel::get_add_kernel(base::DeviceType::kDeviceCPU)(t1, t2, out, nullptr);
 
-  for(int i=0;i<size;i++){
-    std::cout << out.index<float>(i) << " ";
-  }
+  // for(int i=0;i<size;i++){
+  //   std::cout << out.index<float>(i) << " ";
+  // }
 
 }
 

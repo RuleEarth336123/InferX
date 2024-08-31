@@ -29,9 +29,9 @@ TEST(ResnormKernelCPUTest, InputAndWeight) {
 
     kernel::get_rmsnorm_kernel(base::DeviceType::kDeviceCPU)(input, weight, output,nullptr);
     
-    for(int i=0;i< 2*2;i++){
-        std::cout << output.index<float>(i) << " ";
-    }
+    // for(int i=0;i< 2*2;i++){
+    //     std::cout << output.index<float>(i) << " ";
+    // }
 }
 
 TEST(ResnormKernelCPUTest, InputAndWeight2) {
