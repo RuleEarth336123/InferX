@@ -1,0 +1,19 @@
+Determining if the function sgemm_ exists failed with the following output:
+Change Dir: /home/chunyu123/github/InferX/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_00663/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_00663.dir/build.make CMakeFiles/cmTC_00663.dir/build
+gmake[1]: Entering directory '/home/chunyu123/github/InferX/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_00663.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=sgemm_ -o CMakeFiles/cmTC_00663.dir/CheckFunctionExists.c.o -c /usr/share/cmake-3.22/Modules/CheckFunctionExists.c
+Linking C executable cmTC_00663
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_00663.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=sgemm_ CMakeFiles/cmTC_00663.dir/CheckFunctionExists.c.o -o cmTC_00663 
+/usr/bin/ld: CMakeFiles/cmTC_00663.dir/CheckFunctionExists.c.o: in function `main':
+CheckFunctionExists.c:(.text+0x14): undefined reference to `sgemm_'
+collect2: error: ld returned 1 exit status
+gmake[1]: *** [CMakeFiles/cmTC_00663.dir/build.make:99: cmTC_00663] Error 1
+gmake[1]: Leaving directory '/home/chunyu123/github/InferX/build/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:127: cmTC_00663/fast] Error 2
+
+
+
