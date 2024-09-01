@@ -6,7 +6,7 @@
     </td>
     <td>
       <h3>InferX</h3>
-      <p>异构平台大模型推理框架</p>
+      <p>大语言模型异构推理引擎</p>
       <br>
       <a href="https://github.com/othneildrew/Best-README-Template"><strong>浏览文档  »</strong></a>
       <br>
@@ -55,7 +55,7 @@
 
 [![产品截图][product-screenshot]](https://example.com)
 
-大语言模型推理框架的异构实现，可在amd架构和nvidia gpu的加速推理,支持windows、linux以及android跨平台编译，可满足大模型端侧推理的需求
+这个大语言模型推理框架提供了异构计算支持，能够在AMD架构和NVIDIA GPU上加速推理过程。它还具备跨平台编译的能力，支持Windows、Linux以及Android系统，满足了大型模型在端侧进行推理的需求。
 
 <p align="right">(<a href="#top">返回顶部</a>)</p>
 
