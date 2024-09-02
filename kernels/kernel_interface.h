@@ -9,6 +9,9 @@
 #include "cpu/emb_kernel.h"
 #include "cpu/scale_kernel.h"
 #include "cpu/softmax_kernel.h"
+#include "cpu/mha_kernel.h"
+#include "cpu/rope_kernel.h"
+#include "cpu/swiglu_kernel.h"
 #include <functional>
 
 namespace kernel{
@@ -29,6 +32,7 @@ namespace kernel{
                 const tensor::Tensor& ,const tensor::Tensor& , const tensor::Tensor& ,base::DeviceType)>;
 
     kernel::AddKernel get_add_kernel(base::DeviceType device_type);
+    kernel::MatmulKernel get_matmul_kernel(base::DeviceType device_type);
     kernel::MatmulKernel get_matmul_kernel(base::DeviceType device_type);
     kernel::RmsnormKernel get_rmsnorm_kernel(base::DeviceType device_type);
     kernel::EmbKernel get_emb_kernel(base::DeviceType device_type);

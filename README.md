@@ -13,7 +13,7 @@
       <br>
       <a href="docs/">查看 Demo</a>
       ·
-      <a href="docs/">反馈 Bug</a>
+      <a href="https://github.com/RuleEarth336123/InferX/issues">反馈 Bug</a>
       ·
       <a href="docs/">请求新功能</a>
     </td>

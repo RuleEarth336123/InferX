@@ -37,3 +37,32 @@ TEST(test_add, add_align1) {
 
 }
 
+TEST(test_add, add_op) {
+    
+  auto alloc_cpu = base::CPUDeviceAllocatorFactory::get_instance();
+
+  int32_t size = 8 * 8;
+
+  tensor::Tensor t1(base::DataType::kDataTypeFp32, size, true, alloc_cpu);
+  tensor::Tensor t2(base::DataType::kDataTypeFp32, size, true, alloc_cpu);
+  tensor::Tensor out(base::DataType::kDataTypeFp32, size, true, alloc_cpu);
+
+  // op::VecAddLayer layer;
+  // base::Status status = layer.forward();
+  // ASSERT_EQ(status.code(), base::StatusCode::kSuccess);
+  
+  // layer.set_device_type(base::DeviceType::kDeviceCPU);
+  // base::Status status = layer.forward();
+  
+  float j = 0.f;
+  for(int i=0;i<size;i++){
+        t1.index<float>(i) = j++;
+  }
+
+  for(int i=0;i<size;i++){
+      t2.index<float>(i) = j--;
+  }
+
+  kernel::get_add_kernel(base::DeviceType::kDeviceCPU)(t1, t2, out, nullptr);
+
+}

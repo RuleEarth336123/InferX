@@ -14,6 +14,9 @@ namespace kernel{
  */
     void matmul_kernel_cpu(const tensor::Tensor& input,const tensor::Tensor& weight,
                 const tensor::Tensor& output,float scale = 1.f);
+    void matmulq8_kernel_cpu(const tensor::Tensor& input,const tensor::Tensor& weight,
+                const tensor::Tensor& output,float scale = 1.f);
+      
 }
 
 #endif

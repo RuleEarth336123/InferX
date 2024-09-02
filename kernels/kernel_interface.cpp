@@ -85,3 +85,39 @@ kernel::SoftmaxInplaceKernel kernel::get_softmax_inplace_kernel(base::DeviceType
     }
      return nullptr;
 }
+
+kernel::RopeKernel kernel::get_rope_kernel(base::DeviceType device_type)
+{
+    if (device_type == base::DeviceType::kDeviceCPU) {
+        return rope_kernel_cpu;
+    } else if (device_type == base::DeviceType::kDeviceCUDA) {
+       ;
+    } else {
+        //std::cerr << "Unknown device type for get a add kernel." << std::end;
+    }
+    return nullptr;
+}
+
+kernel::SwigluKernel kernel::get_swiglu_kernel(base::DeviceType device_type)
+{
+    if (device_type == base::DeviceType::kDeviceCPU) {
+        return swiglu_kernel_cpu;
+    } else if (device_type == base::DeviceType::kDeviceCUDA) {
+       ;
+    } else {
+        //std::cerr << "Unknown device type for get a add kernel." << std::end;
+    }
+    return nullptr;
+}
+
+kernel::MhaKernel kernel::get_mha_kernel(base::DeviceType device_type)
+{
+    if (device_type == base::DeviceType::kDeviceCPU) {
+        return mha_kernel_cpu;
+    } else if (device_type == base::DeviceType::kDeviceCUDA) {
+       ;
+    } else {
+        //std::cerr << "Unknown device type for get a add kernel." << std::end;
+    }
+    return nullptr;
+}
