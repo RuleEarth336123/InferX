@@ -6,11 +6,11 @@
 
 namespace op{
 
-    struct embeding_output{
+    struct embedingOutput{
         tensor::Tensor input_tokens;
         tensor::Tensor input_embedings;
         tensor::Tensor input_token_num;
-        explicit embeding_output(tensor::Tensor input_tokens,tensor::Tensor input_embedings,\
+        explicit embedingOutput(tensor::Tensor input_tokens,tensor::Tensor input_embedings,\
             tensor::Tensor input_token_num) 
             : input_tokens(std::move(input_tokens)),\
             input_embedings(std::move(input_embedings)),\
