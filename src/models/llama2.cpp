@@ -40,26 +40,53 @@ base::Status model::Llama2Model::forward(const tensor::Tensor &input, const tens
 
 std::vector<int32_t> model::Llama2Model::encode(const string &sentence) const
 {
-    return std::vector<int32_t>();
+    CHECK(encode_layer_ != nullptr);
+    return encode_layer_->encode(sentence);
 }
 
 std::string model::Llama2Model::decode(int32_t token_idx) const
 {
-    return std::string();
+    CHECK(encode_layer_ != nullptr);
+    return encode_layer_->decode(token_idx);
 }
 
 int32_t model::Llama2Model::get_eos() const
 {
-    return 0;
+    CHECK(this->encode_layer_ != nullptr);
+    return encode_layer_->eos();
 }
 
 std::pair<tensor::Tensor, tensor::Tensor> model::Llama2Model::slice_kv_cache(int32_t layer_idx, int32_t token_pos) const
 {
-    return std::pair<tensor::Tensor, tensor::Tensor>();
+
+    int32_t layre_offset = layer_idx * config_->seq_len_ * config_->kv_dim_;
+    int32_t cache_offset = layre_offset + token_pos * config_->kv_dim_;
+
+    float* key_cache_ptr = const_cast<float*>(get_buffer(ModelBufferType::kKeyCache).ptr<float>(cache_offset));
+    float* val_cache_ptr = const_cast<float*>(get_buffer(ModelBufferType::kValueCache).ptr<float>(cache_offset));
+
+    auto key_cache = std::make_shared<base::Buffer>(config_->kv_dim_ * sizeof(float), nullptr,key_cache_ptr,true);
+    auto val_cache = std::make_shared<base::Buffer>(config_->kv_dim_ * sizeof(float), nullptr,val_cache_ptr,true);
+
+    key_cache->set_device_type(device_type_);
+    val_cache->set_device_type(device_type_);
+
+    tensor::Tensor key(base::DataType::kDataTypeFp32, config_->kv_dim_);
+    tensor::Tensor val(base::DataType::kDataTypeFp32, config_->kv_dim_);
+
+    key.assign(key_cache);
+    val.assign(val_cache);
+
+    return {key,val};
 }
 
 op::embedingOutput model::Llama2Model::embedding(const std::vector<int> &tokens) const
 {
+    auto input_tokens = get_buffer(ModelBufferType::kInputTokens);
+
+
+
+
     return op::embedingOutput();
 }
 
@@ -520,6 +547,56 @@ void model::Llama2Model::attention_rms(int32_t layer_idx, const tensor::Tensor &
 
 void model::Llama2Model::feed_forward(int32_t layer_idx, const tensor::Tensor &input) const
 {
+    using namespace tensor;
+    CHECK(llama_layers_ != nullptr);
+
+    CHECK_NE(llama_layers_->add_layer_,nullptr) << " The add layer in the feedforward block is null pointer";
+    STATUS_CHECK(
+        llama_layers_->add_layer_->forward(input, get_buffer(ModelBufferType::kAttnOutput), input)
+    );
+
+    //ffn resnorm
+    Tensor ffn_norm_output = get_buffer(ModelBufferType::kFFNRMSNorm);
+    const auto& ffn_rmsnorm = llama_layers_->rmsnorm_layers_.at(layer_idx + config_->layer_num_);
+    CHECK_NE(ffn_rmsnorm,nullptr) << "The final rmsnorm layer in the feedforward block is null pointer";
+    STATUS_CHECK(
+        ffn_rmsnorm->forward(input,ffn_norm_output);
+    );
+
+    //w1
+    Tensor w1_output = get_buffer(ModelBufferType::kW1Output);
+    const auto& w1_layer = llama_layers_->w1_layers_.at(layer_idx);
+    CHECK_NE(w1_layer, nullptr) << "The w1 layer in the feedforward block is null pointer";
+    STATUS_CHECK(
+        w1_layer->forward(ffn_norm_output, w1_output)
+    );
+
+    //w3
+    Tensor w3_output = get_buffer(ModelBufferType::kW3Output);
+    const auto& w3_layer = llama_layers_->w3_layers_.at(layer_idx);
+    CHECK_NE(w3_layer, nullptr) << "The w2 layer in the feedforward block is null pointer";
+    STATUS_CHECK(
+        w3_layer->forward(ffn_norm_output, w3_output)
+    );
+
+    //swiglu
+    CHECK_NE(llama_layers_->swiglu_layer_, nullptr) << "The swiglu layer in the feedforward block is null pointer";
+    STATUS_CHECK(
+        llama_layers_->swiglu_layer_->forward(w1_output, w3_output, w1_output)
+    );
+
+    //w2
+    Tensor w2_output = get_buffer(ModelBufferType::kW2Output);
+    const auto& w2_layer = llama_layers_->w3_layers_.at(layer_idx);
+    CHECK_NE(w2_layer, nullptr) << "The w2 layer in the feedforward block is null pointer";
+    STATUS_CHECK(
+        w2_layer->forward(w1_output, w2_output)
+    );
+ 
+    // residual add
+    CHECK_NE(llama_layers_->add_layer_, nullptr) << "The add layer in the feedforward block is null pointer";
+    STATUS_CHECK(llama_layers_->add_layer_->forward(input, w2_output, input));
+
 }
 
 void model::Llama2Model::attention_qkv(int32_t layer_idx, const tensor::Tensor &pos_tensor) const
@@ -552,9 +629,30 @@ void model::Llama2Model::attention_qkv(int32_t layer_idx, const tensor::Tensor &
 
 void model::Llama2Model::cls_logits(const tensor::Tensor &input) const
 {
+    CHECK(llama_layers_ != nullptr);
+    const auto& norm = llama_layers_->rmsnorm_layers_.at(2 * config_->layer_num_);
+    CHECK_NE(norm,nullptr);
+    STATUS_CHECK(norm->forward(input,input));
+
+    tensor::Tensor forward_output = get_buffer(ModelBufferType::kForwardOutput);
+    CHECK_NE(llama_layers_->cls_layer_, nullptr);
+    STATUS_CHECK(
+        llama_layers_->cls_layer_->forward(input, forward_output);
+    );
 }
 
 int32_t model::Llama2Model::post_processing(const tensor::Tensor &pos, bool is_prompt) const
 {
+    tensor::Tensor forward_output = get_buffer(ModelBufferType::kForwardOutput);
+    const float* forward_logits = forward_output.ptr<float>();
+
+    int32_t next = 0;
+    if(is_prompt){
+        next = -1;
+    }else{
+        next = static_cast<int32_t>(sampler_->sample(
+            forward_logits, forward_output.size(),nullptr
+        ));
+    }
     return 0;
 }
