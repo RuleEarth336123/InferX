@@ -6,10 +6,10 @@
 #include <op/matmul.h>
 #include <op/mha.h>
 #include <op/rmsnorm.h>
-#include <op/matmul.h>
-#include <op/mha.h>
-#include <op/rmsnorm.h>
 #include <op/embeding.h>
+#include <op/rope.h>
+#include <op/swiglu.h>
+#include <op/add.h>
 #include <glog/logging.h>
 #include <sentencepiece_processor.h>
 #include <utility>
