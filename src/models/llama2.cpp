@@ -28,14 +28,34 @@ base::Status model::Llama2Model::init(base::DeviceType device_type)
     return error::Success();
 }
 
-base::Status model::Llama2Model::predict(const tensor::Tensor &init, const tensor::Tensor &pos_tensor, bool is_prompt, int &next) const
+base::Status model::Llama2Model::predict(const tensor::Tensor &input, const tensor::Tensor &pos_tensor, bool is_prompt, int &next) const
 {
-    return base::Status();
+    auto status = forward(input,pos_tensor,next);
+    if(!status){
+        return status;
+    }
+    next = post_processing(pos_tensor, is_prompt);
+    return base::error::Success();
 }
 
-base::Status model::Llama2Model::forward(const tensor::Tensor &input, const tensor::Tensor &pos_tensor, int next) const
+base::Status model::Llama2Model::forward(const tensor::Tensor &input, const tensor::Tensor &pos_tensor, int& next) const
 {
-    return base::Status();
+    if(input.is_empty()){
+        return base::error::InvalidArgument("the input tensor is empty.");
+    }
+
+    if(device_type_ == base::DeviceType::kDeviceCPU && is_quant_model_){
+        return base::error::InternalError("Unsupported int8 quant in the cpu device");
+    }
+
+    for(int32_t layer_idx = 0;layer_idx < config_->layer_num_;layer_idx++){
+        attention_rms(layer_idx,input);
+        attention_qkv(layer_idx, pos_tensor);
+        attention_mha(layer_idx, pos_tensor);
+        feed_forward(layer_idx, input);
+    }
+    cls_logits(input);
+    return base::error::Success();
 }
 
 std::vector<int32_t> model::Llama2Model::encode(const string &sentence) const
@@ -83,16 +103,48 @@ std::pair<tensor::Tensor, tensor::Tensor> model::Llama2Model::slice_kv_cache(int
 op::embedingOutput model::Llama2Model::embedding(const std::vector<int> &tokens) const
 {
     auto input_tokens = get_buffer(ModelBufferType::kInputTokens);
+    auto input_embeddings = get_buffer(ModelBufferType::kInputEmbeddings);
 
+    if(input_tokens.size() != tokens.size()){
+        input_tokens.reshape({static_cast<int32_t>(tokens.size())});
+        input_embeddings.reshape({static_cast<int32_t>(tokens.size()),config_->dim_});
+    }
 
+    for(int32_t i = 0;i<tokens.size();i++){
+        input_tokens.index<int32_t>(i) = tokens.at(i);
+    }
 
+    auto input_token_num = tensor::Tensor(base::DataType::kDataTypeInt32, static_cast<int32_t>(tokens.size()));
+    LOG_IF(FATAL, !llama_layers_->embedding_layer_)<< "The embedding layer in the llama2 model is null pointer.";
+    STATUS_CHECK(
+        llama_layers_->embedding_layer_->forward(input_tokens,input_token_num,input_embeddings)
+    );
 
-    return op::embedingOutput();
+    op::embedingOutput output;
+    output.input_embedings = input_embeddings;
+    output.input_tokens = input_tokens;
+    output.input_token_num = input_token_num;
+
+    return output;
 }
 
-tensor::Tensor model::Llama2Model::fill_output(const tensor::Tensor &pos_tensor, const op::embedingOutput &, bool is_prompt) const
+tensor::Tensor model::Llama2Model::fill_input(const tensor::Tensor &pos_tensor, const op::embedingOutput& embedding_output, bool is_prompt) const
 {
-    return tensor::Tensor();
+    const int32_t pos = pos_tensor.index<int32_t>(0);
+    auto [input_tokens,input_embeddings,input_token_num] = embedding_output;
+
+    int32_t index = 0;
+    if(is_prompt){
+        index = pos;
+    }
+    std::shared_ptr<base::Buffer> input_emb_buffer = std::make_shared<base::Buffer>(
+        config_->dim_ * sizeof(float), nullptr,\
+        embedding_output.input_embedings.ptr<float>(index * config_->dim_), true);
+
+    tensor::Tensor input(base::DataType::kDataTypeFp32, config_->dim_);
+    input.assign(input_emb_buffer);
+    input.set_device_type(device_type_);
+    return input;
 }
 
 void model::Llama2Model::init_mem()

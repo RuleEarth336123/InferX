@@ -10,6 +10,8 @@ namespace op{
         tensor::Tensor input_tokens;
         tensor::Tensor input_embedings;
         tensor::Tensor input_token_num;
+
+        explicit embedingOutput(){}
         explicit embedingOutput(tensor::Tensor input_tokens,tensor::Tensor input_embedings,\
             tensor::Tensor input_token_num) 
             : input_tokens(std::move(input_tokens)),\

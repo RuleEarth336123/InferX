@@ -49,8 +49,8 @@ namespace model{
         explicit Llama2Model(string token_path,string model_path,bool is_quant_model);
 
         base::Status init(base::DeviceType device_type) override;
-        base::Status predict(const tensor::Tensor& init,const tensor::Tensor& pos_tensor,bool is_prompt,int& next) const override;
-        base::Status forward(const tensor::Tensor& input, const tensor::Tensor& pos_tensor,int next) const override;
+        base::Status predict(const tensor::Tensor& init,const tensor::Tensor& pos_tensor,bool is_prompt, int& next) const override;
+        base::Status forward(const tensor::Tensor& input, const tensor::Tensor& pos_tensor,int& next) const override;
 
         std::vector<int32_t> encode(const string& sentence) const override;
         std::string decode(int32_t token_idx) const override;
@@ -60,7 +60,7 @@ namespace model{
 
         op::embedingOutput embedding(const std::vector<int>& tokens) const;
 
-        tensor::Tensor fill_output(const tensor::Tensor& pos_tensor,const op::embedingOutput& ,bool is_prompt) const;
+        tensor::Tensor fill_input(const tensor::Tensor& pos_tensor,const op::embedingOutput& embedding_output,bool is_prompt) const;
 
     private:
 
