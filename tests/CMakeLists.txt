@@ -6,6 +6,7 @@ find_package(glog REQUIRED)
 find_package(GTest REQUIRED)
 
 set(link_ext_lib glog::glog GTest::gtest)
+#add_executable(test_llm test_lalma_cpu.cpp test_main.cpp)
 add_executable(test_llm test_main.cpp test_scale.cpp test_emb.cpp test_rmsnorm.cpp test_mamul.cpp test_buffer.cpp test_tensor.cpp test_add.cpp)
 # add_executable(test_llm test_main.cpp test_mamul.cpp)
 # add_executable(test_llm test_main.cpp test_rmsnorm.cpp)

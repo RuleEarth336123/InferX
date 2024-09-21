@@ -23,7 +23,7 @@ namespace model{
         std::shared_ptr<op::Layer> rope_layer_; 
         std::shared_ptr<op::Layer> swiglu_layer_; 
         std::shared_ptr<op::Layer> mha_layer_;
-        std::shared_ptr<op::Layer> embeding_layer_;
+        std::shared_ptr<op::Layer> embedding_layer_;
 
         std::vector<std::shared_ptr<op::Layer>> wq_layers_;
         std::vector<std::shared_ptr<op::Layer>> wk_layers_;
@@ -33,7 +33,8 @@ namespace model{
         std::vector<std::shared_ptr<op::Layer>> w1_layers_;
         std::vector<std::shared_ptr<op::Layer>> w2_layers_;
         std::vector<std::shared_ptr<op::Layer>> w3_layers_;
-        std::vector<std::shared_ptr<op::Layer>> resnorm_layers_;
+        std::vector<std::shared_ptr<op::Layer>> rmsnorm_layers_;
+        std::shared_ptr<op::Layer> cls_layer_;
 
         void to_cuda(){}
     };
@@ -46,7 +47,7 @@ namespace model{
 
     class Llama2Model : public Model{
     public:
-        explicit Llama2Model(string token_path,string model_path,bool is_quant_model);
+        explicit Llama2Model(string token_path,string model_path,bool is_quant_model = false);
 
         base::Status init(base::DeviceType device_type) override;
         base::Status predict(const tensor::Tensor& init,const tensor::Tensor& pos_tensor,bool is_prompt, int& next) const override;
@@ -79,7 +80,7 @@ namespace model{
 
     private:
 
-        std::unique_ptr<model::LLama2Layers> llama_layers_;
+        std::unique_ptr<model::Llama2layers> llama_layers_;
 
     };
 }
