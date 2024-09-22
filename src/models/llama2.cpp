@@ -139,7 +139,7 @@ tensor::Tensor model::Llama2Model::fill_input(const tensor::Tensor &pos_tensor, 
     }
     std::shared_ptr<base::Buffer> input_emb_buffer = std::make_shared<base::Buffer>(
         config_->dim_ * sizeof(float), nullptr,\
-        embedding_output.input_embedings.ptr<float>(index * config_->dim_), true);
+        input_embeddings.ptr<float>(index * config_->dim_), true);
 
     tensor::Tensor input(base::DataType::kDataTypeFp32, config_->dim_);
     input.assign(input_emb_buffer);
@@ -151,7 +151,7 @@ void model::Llama2Model::init_mem()
 {
     using namespace tensor;
     std::shared_ptr<base::DeviceAllocator> alloc;
-    if(device_type_ = base::DeviceType::kDeviceCPU){
+    if(device_type_ == base::DeviceType::kDeviceCPU){
         alloc = base::CPUDeviceAllocatorFactory::get_instance();
     }
 
@@ -208,12 +208,12 @@ base::Status model::Llama2Model::create_layers()
 
     create_nonparam_layers();
 
-    if(!llama_layers_->embeding_layers_){
+    if(!llama_layers_->embedding_layer_){
         std::cerr << "create the embedding layer for the llama model failed!" <<std::endl;
         return error::InternalError("create the embedding layer for the llama model failed!");
     }
 
-    if(!llama_layers_->resnorm_layers_.size() != 2 * config_->layer_num_ = 1){
+    if((llama_layers_->rmsnorm_layers_.size() != (2 * config_->layer_num_ + 1))){
         std::cerr << "create the rmsnorm layers for the llama model failed!" << std::endl;
         return error::InternalError("create the rmsnorm layers for the llama model failed!" );
     }
@@ -282,12 +282,12 @@ void model::Llama2Model::create_param_layers()
     CHECK(llama_layers_ != nullptr);
 
     //创建embeding层(dim_ * seq * vocab)
-    llama_layers_->embeding_layers_ = std::make_shared<op::EmbeddingLayer>(
+    llama_layers_->embedding_layer_ = std::make_shared<op::EmbeddingLayer>(
         base::DeviceType::kDeviceCPU,config_->dim_,  config_->seq_len_,std::abs(config_->vocab_size_)
     );
     //设置embeding层权重参数
     const void* weight_embedding = raw_model_data_->weight(0);
-    llama_layers_->embeding_layer_->set_weight(
+    llama_layers_->embedding_layer_->set_weight(
         0, {std::abs(config_->vocab_size_), config_->dim_},weight_embedding,base::DeviceType::kDeviceCPU
     );
 
@@ -350,7 +350,7 @@ void model::Llama2Model::create_param_layers()
         auto w1 = std::make_shared<op::MatmulLayer>(device_type_,config_->hidden_dim_,config_->dim_);
         w1->set_weight(
             0,{config_->hidden_dim_,config_->dim_},this->raw_model_data_->weight(pos),base::DeviceType::kDeviceCPU);
-        llama_layers_->w1_layers.push_back(w1);
+        llama_layers_->w1_layers_.push_back(w1);
         pos += config_->dim_ * config_->hidden_dim_;
     }
 
@@ -359,7 +359,7 @@ void model::Llama2Model::create_param_layers()
         auto w2 = std::make_shared<op::MatmulLayer>(device_type_,config_->hidden_dim_,config_->dim_);
         w2->set_weight(
             0,{config_->hidden_dim_,config_->dim_},this->raw_model_data_->weight(pos),base::DeviceType::kDeviceCPU);
-        llama_layers_->w2_layers.push_back(w2);
+        llama_layers_->w2_layers_.push_back(w2);
         pos += config_->dim_ * config_->hidden_dim_;
     }
 
@@ -368,7 +368,7 @@ void model::Llama2Model::create_param_layers()
         auto w3 = std::make_shared<op::MatmulLayer>(device_type_,config_->hidden_dim_,config_->dim_);
         w3->set_weight(
             0,{config_->hidden_dim_,config_->dim_},this->raw_model_data_->weight(pos),base::DeviceType::kDeviceCPU);
-        llama_layers_->w3_layers.push_back(w3);
+        llama_layers_->w3_layers_.push_back(w3);
         pos += config_->dim_ * config_->hidden_dim_;
     }
 
@@ -394,7 +394,7 @@ void model::Llama2Model::create_param_layers()
         const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
         rmsnorm_layer->set_weight(
             0, {config_->dim_}, weight_rmsnorm, base::DeviceType::kDeviceCPU);
-        llama_layers_->resnorm_layer.push_back(rmsnorm_layer);
+        llama_layers_->rmsnorm_layers_.push_back(rmsnorm_layer);
         rmsnorm_pos += config_->dim_;
     }
 
@@ -409,7 +409,7 @@ void model::Llama2Model::create_param_layers()
         const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
         rmsnorm_layer->set_weight(
             0, {config_->dim_}, weight_rmsnorm, base::DeviceType::kDeviceCPU);
-        llama_layers_->resnorm_layer.push_back(rmsnorm_layer);
+        llama_layers_->rmsnorm_layers_.push_back(rmsnorm_layer);
         rmsnorm_pos += config_->dim_;
     }
 
@@ -422,7 +422,7 @@ void model::Llama2Model::create_param_layers()
     const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
     rms_final_layer->set_weight(
         0, {config_->dim_}, weight_rmsnorm, base::DeviceType::kDeviceCPU);
-    llama_layers_->resnorm_layer.push_back(rms_final_layer);
+    llama_layers_->rmsnorm_layers_.push_back(rms_final_layer);
 }
 
 void model::Llama2Model::create_nonparam_layers()
@@ -503,7 +503,7 @@ void model::Llama2Model::create_param_quant_layers()
         auto w1 = std::make_shared<op::MatmulLayer>(device_type_,config_->hidden_dim_,config_->dim_,true);
         w1->set_weight(
             0,{config_->hidden_dim_,config_->dim_},this->raw_model_data_->weight(pos),base::DeviceType::kDeviceCPU);
-        llama_layers_->w1_layers.push_back(w1);
+        llama_layers_->w1_layers_.push_back(w1);
         pos += config_->dim_ * config_->hidden_dim_;
     }
 
@@ -512,7 +512,7 @@ void model::Llama2Model::create_param_quant_layers()
         auto w2 = std::make_shared<op::MatmulLayer>(device_type_,config_->hidden_dim_,config_->dim_,true);
         w2->set_weight(
             0,{config_->hidden_dim_,config_->dim_},this->raw_model_data_->weight(pos),base::DeviceType::kDeviceCPU);
-        llama_layers_->w2_layers.push_back(w2);
+        llama_layers_->w2_layers_.push_back(w2);
         pos += config_->dim_ * config_->hidden_dim_;
     }
 
@@ -521,32 +521,36 @@ void model::Llama2Model::create_param_quant_layers()
         auto w3 = std::make_shared<op::MatmulLayer>(device_type_,config_->hidden_dim_,config_->dim_,true);
         w3->set_weight(
             0,{config_->hidden_dim_,config_->dim_},this->raw_model_data_->weight(pos),base::DeviceType::kDeviceCPU);
-        llama_layers_->w3_layers.push_back(w3);
+        llama_layers_->w3_layers_.push_back(w3);
         pos += config_->dim_ * config_->hidden_dim_;
     }
 
 
 
     // 创建分类层（classification layer）
-    llama_layers_->cls_layer_ = std::make_shared<op::MatmulLayer>(device_type_,config_->vocab_size_,config_->dim_,true);
-    llama_layers_->cls_layer_->set_group_size(group_size_);
+    auto cls_layer = std::make_shared<op::MatmulLayer>(device_type_,config_->vocab_size_,config_->dim_,true); 
+    cls_layer->set_group_size(group_size_);
+
+    
     if(config_->is_shared_weight_){
-        llama_layers_->cls_layer_->set_weight(
+        cls_layer->set_weight(
             0,{config_->vocab_size_, config_->dim_},this->raw_model_data_->weight(0), base::DeviceType::kDeviceCPU);
     }else{
-        llama_layers_->cls_layer_->set_weight(
+        cls_layer->set_weight(
             0,{config_->vocab_size_, config_->dim_},this->raw_model_data_->weight(pos), base::DeviceType::kDeviceCPU);
-        pos = pos + config_->vocab_size_ * config_->dim_ + llama_layers_->cls_layer_->get_scale_num() * sizeof(float);
+        pos = pos + config_->vocab_size_ * config_->dim_ + cls_layer->get_scale_num() * sizeof(float);
     }
 
     //embeding层
     float* weight_ptr = (float*)raw_model_data_->weight(pos);
-    llama_layers_->embeding_layer_ = std::make_shared<op::EmbeddingLayer>(
+    llama_layers_->embedding_layer_ = std::make_shared<op::EmbeddingLayer>(
         device_type_,config_->dim_,config_->seq_len_,std::abs(config_->vocab_size_)
     );
     llama_layers_->embedding_layer_->set_weight(
         0, {std::abs(config_->vocab_size_), config_->dim_}, weight_ptr,base::DeviceType::kDeviceCPU
     );
+
+    llama_layers_->cls_layer_ = cls_layer;
 
     weight_ptr += config_->vocab_size_ * config_->dim_;
 
