@@ -8,6 +8,8 @@ void mha_kernel_cpu(int32_t pos, int32_t head_num, int32_t layer_index, int32_t 
                 const tensor::Tensor& key_cache_tensor, const tensor::Tensor& value_cache_tensor,
                 base::DeviceType device_type) {
 
+    //总体大小(N.max_len,dim)
+    //索引到第几个transformer块
     int32_t layer_offset = layer_index * seq_len * kv_dim;
     float scale = 1.f / std::sqrt(static_cast<float>(head_size));
 
@@ -27,6 +29,10 @@ void mha_kernel_cpu(int32_t pos, int32_t head_num, int32_t layer_index, int32_t 
         query_mat.set_device_type(device_type);
     
         for (int32_t t = 0; t <= pos; t++) {
+            /*
+            对于滴layer_idx个transformer块和token pos同步，对应的存放位置为cache_offset
+            它的索引就是(layer_index,token_pos,:) kv_cache[layer_index,token_pos,:]
+            */
             int32_t cache_offset = t * kv_dim + (h / kv_mul) * head_size;
             const float* key_head_addr = key_cache_tensor.ptr<float>() + layer_offset + cache_offset;
             tensor::Tensor key_mat(base::DataType::kDataTypeFp32, 1, head_size, false, nullptr,
