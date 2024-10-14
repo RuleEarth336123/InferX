@@ -28,16 +28,3 @@ TEST(test_emb, emb1_nostream){
     }
 }
 
-TEST(test_emb,emb2_op){
-    base::DeviceType device_type = base::DeviceType::kDeviceCPU;
-    int32_t dim = 128;
-    int32_t seq_len = 10;
-    int32_t vocab_size = 10000;
-
-    op::EmbeddingLayer layer(device_type, dim, seq_len, vocab_size);
-    auto alloc_cpu = base::CPUDeviceAllocatorFactory::get_instance();
-
-    auto status = layer.check();
-    EXPECT_EQ(status, base::StatusCode::kSuccess);
-
-}

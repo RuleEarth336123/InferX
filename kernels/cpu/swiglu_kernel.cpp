@@ -21,7 +21,7 @@ void swiglu_kernel_cpu(const tensor::Tensor& input1, const tensor::Tensor& input
                         true);
   arma::fvec output_vec(const_cast<float*>(output.ptr<float>()), output.size(), false,
                         true);
-
+    //这里%是重载成点乘
   input1_vec %= (1.0f / (1.0f + arma::exp(-input1_vec)));
   output_vec = input1_vec % input2_vec;
 #else
@@ -31,6 +31,12 @@ void swiglu_kernel_cpu(const tensor::Tensor& input1, const tensor::Tensor& input
     float* output_ptr = const_cast<float*>(output.ptr<float>());
 
     // 计算sigmoid函数
+    /*
+        input1 = input1 * sigmod(input1) = input1 * 1/(1 + exp(-input))
+        output = input1 * input2
+
+        function swiglu(x1,x2) = silu(x1) @ x2 = (x1 @ sigmod(x1)) @ x2 
+    */
     for (int i = 0; i < size; ++i) {
         input1_ptr[i] = 1.0f / (1.0f + expf(-input1_ptr[i]));
     }
