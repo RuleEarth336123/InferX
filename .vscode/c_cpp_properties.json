@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/kernels"
+            ],
+            "defines": [
+                "AEE_C_API",
+                "AEE_LINUX",
+                "USE_GENERAL_LINUX_MAC"
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c89",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
+}

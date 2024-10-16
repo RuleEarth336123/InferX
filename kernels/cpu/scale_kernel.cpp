@@ -20,7 +20,7 @@ void kernel::scale_sum_kernel_cpu(const tensor::Tensor& value, const tensor::Ten
                           void* stream)
 {
     CHECK_EQ(value.is_empty(), false);
-    CHECK_EQ(scale.is_empty(), false);
+    CHECK_EQ(scale.is_empty(), false); 
     CHECK_EQ(output.is_empty(), false);
     CHECK_EQ(size, value.size());
     CHECK_GE(size, scale.size());

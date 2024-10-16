@@ -1,18 +1,18 @@
 #include "base/tick.h"
 #include "glog/logging.h"
-#include "models/llama2.h"
+#include "models/qwen2.h"
 #include "base/base.h"
 using std::string;
 using std::vector;
 using namespace tensor;
 
-int32_t generate(const model::Llama2Model& model, const std::string& sentence, int total_steps,bool need_output = false){
+int32_t generate(const model::Qwen2Model& model, const std::string& sentence, int total_steps,bool need_output = false){
     auto tokens = model.encode(sentence);
     int32_t prompt_len = tokens.size();
     LOG_IF(FATAL,tokens.empty()) << "the tokens is empty.";
 
     int32_t pos = 0;
-    int32_t next = -1;
+    int32_t next = tokens.at(pos);
     bool is_prompt = true;
     const auto& prompt_embedding = model.embedding(tokens);
     tensor::Tensor pos_tensor = model.get_buffer(model::ModelBufferType::kInputPos);
@@ -29,7 +29,7 @@ int32_t generate(const model::Llama2Model& model, const std::string& sentence, i
             tensor::Tensor input = model.fill_input(pos_tensor, token_embedding, is_prompt);
             model.predict(input, pos_tensor, is_prompt, next);
         }
-        if(next == model.get_eos()){
+        if(model.is_sentence_ending(next)){
             break;
         }
         string word;
@@ -58,13 +58,13 @@ int main(int argc,char* argv[]){
     const char* checkpoint_path = argv[1]; 
     const char* tokenizer_path = argv[2];
 
-    model::Llama2Model model(tokenizer_path, checkpoint_path, false);
+    model::Qwen2Model model(base::TokenizerType::kEncodeBpe,tokenizer_path, checkpoint_path, false);
     auto init_status = model.init(base::DeviceType::kDeviceCPU);
     if(!init_status){
         LOG(FATAL) << "The model init failed, the error code is: " << init_status.get_err_code();
     }
 
-    const std::string& sentence = "This";
+    const std::string& sentence = "你好";
 
     generate(model, sentence, 128, true);
     generate(model, sentence, 128, true);

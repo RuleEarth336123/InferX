@@ -1,8 +1,4 @@
 find_package(glog REQUIRED)
-#set(GTEST_INCLUDE_DIRS /usr/src/googletest/googletest/include)
-# set(GTEST_INCLUDE_DIRS "/usr/src/googletest/googletest/include")
-# set(GTEST_LIBRARIES "/usr/src/googletest/googletest/build/lib")
-# 然后使用这些变量来查找GTest
 find_package(GTest REQUIRED)
 
 set(link_ext_lib glog::glog GTest::gtest)

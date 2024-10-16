@@ -14,7 +14,7 @@
 namespace model{
     class Model{
     public:
-        explicit Model(base::ModelType model_type,std::string token_path,std::string model_path,bool is_quant_modedl);
+        explicit Model(base::TokenizerType tokenizer_type,base::ModelType model_type,std::string token_path,std::string model_path,bool is_quant_modedl);
         
         virtual base::Status init(base::DeviceType device_type) = 0;
 
@@ -27,6 +27,8 @@ namespace model{
         ) const = 0;
 
         virtual int32_t get_eos() const = 0;
+
+        virtual bool is_sentence_ending(int32_t token_idx) const = 0;
 
         base::ModelType model_type() const;
 
@@ -111,12 +113,13 @@ namespace model{
 
         std::string token_path_;
         std::string model_path_;
-        std::unique_ptr<op::EncodeLayer> encode_layer_;
+        std::unique_ptr<op::EncodeLayerBase> encode_layer_;
         std::map<ModelBufferType, tensor::Tensor> buffers_;
         std::unique_ptr<model::Sampler> sampler_;
         std::shared_ptr<RawModelData> raw_model_data_;
         base::DeviceType device_type_ = base::DeviceType::kDeviceUnknown;
         base::ModelType model_type_ = base::ModelType::kModelTypeUnknown;
+        base::TokenizerType tokenizer_type_ = base::TokenizerType::kEncodeUnknown;
 
     };
 }

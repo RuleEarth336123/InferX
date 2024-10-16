@@ -3,8 +3,9 @@
 #include <sys/mman.h>
 #include <cstdio>
 #include <iostream>
-model::Model::Model(base::ModelType model_type, std::string token_path, std::string model_path, bool is_quant_modedl)
-                : model_type_(model_type),
+model::Model::Model(base::TokenizerType tokenizer_type,base::ModelType model_type, std::string token_path, std::string model_path, bool is_quant_modedl)
+                : tokenizer_type_(tokenizer_type),
+                model_type_(model_type),
                 token_path_(std::move(token_path)),
                 model_path_(std::move(model_path)),
                 is_quant_model_(is_quant_modedl)
@@ -124,20 +125,22 @@ base::Status model::Model::read_model_file()
 base::Status model::Model::create_encode_layer()
 {
     using namespace base;
-    std::unique_ptr<sentencepiece::SentencePieceProcessor> spe = std::make_unique<sentencepiece::SentencePieceProcessor>();
+    // std::unique_ptr<sentencepiece::SentencePieceProcessor> spe = std::make_unique<sentencepiece::SentencePieceProcessor>();
     
-    const auto status = spe->Load(token_path_);
-    if(!status.ok()){
-        return error::PathNotValid(token_path_);
-    }
+    // const auto status = spe->Load(token_path_);
+    // if(!status.ok()){
+    //     return error::PathNotValid(token_path_);
+    // }
 
-    config_->vocab_size_ = spe->GetPieceSize();
-    if(config_->vocab_size_ <= 0){
-        std::cerr << "The vocab size param read error from the model file!" <<std::endl;
-        return error::InternalError("The vocab size param read error from the model file!");
-    }
+    // config_->vocab_size_ = spe->GetPieceSize();
+    // if(config_->vocab_size_ <= 0){
+    //     std::cerr << "The vocab size param read error from the model file!" <<std::endl;
+    //     return error::InternalError("The vocab size param read error from the model file!");
+    // }
 
-    encode_layer_ = std::make_unique<op::EncodeLayer>(device_type_,true,false,std::move(spe));
+    //encode_layer_ = std::make_unique<op::EncodeLayer>(device_type_,true,false,std::move(spe));
+    encode_layer_ = std::make_unique<op::QwenEncodeLayer>(this->token_path_, false, false);
+    config_->vocab_size_ = encode_layer_->vocab_size();
     if(!encode_layer_){
         std::cerr << "Create the encode layer failed." <<std::endl;
         return error::InternalError("Create the encode layer failed.");
@@ -188,10 +191,18 @@ base::Status model::Model::generate_model_infos(const ModelConfig &config) const
 
     config_->is_shared_weight_ = config.vocab_size > 0 ? true : false; 
 
-    if(std::abs(config.vocab_size) != config_->vocab_size_){
-        std::cerr << "Vocabulary size mismatch between the model file and the token list." << std::endl;
-        return base::error::ModelParseError("Vocabulary size mismatch between the model file and the token list.");
+    if(config.vocab_size > 0){
+        config_->is_shared_weight_ = true;
+    }else{
+        config_->is_shared_weight_ = false;
     }
+
+    // if(std::abs(config.vocab_size) != config_->vocab_size_){
+    //     std::cerr << "Vocabulary size mismatch between the model file and the token list." << std::endl;
+    //     return base::error::ModelParseError("Vocabulary size mismatch between the model file and the token list.");
+    // }
+
+    config_->vocab_size_ = std::abs(config.vocab_size);
 
     return base::error::Success();
 }

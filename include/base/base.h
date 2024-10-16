@@ -81,6 +81,12 @@ namespace base{
         kInvalidArgument = 7,
     };
 
+    enum class TokenizerType {
+        kEncodeUnknown = -1,
+        kEncodeSpe = 0,
+        kEncodeBpe = 1,
+    };
+
     class Status {
     public:
         Status(int code = StatusCode::kSuccess, std::string err_message = "");
