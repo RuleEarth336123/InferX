@@ -197,6 +197,86 @@ void model::Qwen2Model::init_mem()
 
 base::Status model::Qwen2Model::create_layers()
 {
+    using namespace base;
+    if(!qwen_layers_){
+        qwen_layers_ = std::make_unique<Qwen2layers>();
+    }
+
+    if(!is_quant_model_){
+        create_param_layers();
+    }else{
+        create_param_quant_layers();
+    }
+
+    create_nonparam_layers();
+
+    if(!llama_layers_->embedding_layer_){
+        std::cerr << "create the embedding layer for the llama model failed!" <<std::endl;
+        return error::InternalError("create the embedding layer for the llama model failed!");
+    }
+
+    if(llama_layers_->rmsnorm_layers_.size() != 2 * config_->layer_num_ + 1){
+        std::cerr << "create the rmsnorm layers for the llama model failed!" << std::endl;
+        return error::InternalError("create the rmsnorm layers for the llama model failed!" );
+    }
+
+    if(llama_layers_->wq_layers_.size() != config_->layer_num_ ||
+        llama_layers_->wk_layers_.size() != config_->layer_num_ ||
+        llama_layers_->wv_layers_.size() != config_->layer_num_ ||
+        llama_layers_->wo_layers_.size() != config_->layer_num_ ){
+        std::cerr << "Create the matmul layer in the attention and ffn attention layers failed! " << std::endl;
+        return error::InternalError("Create the matmul layer in the attention and ffn attention layers failed! ");
+    }
+
+    for(int32_t i = 0;i < config_->layer_num_; i++){
+        if(!llama_layers_->wq_layers_.at(i) ||
+        !llama_layers_->wq_layers_.at(i) ||
+        !llama_layers_->wq_layers_.at(i) ||
+        !llama_layers_->wq_layers_.at(i) ){
+            std::cerr << "Create the matmul layer in the attention and ffn attention layers failed! " << std::endl;
+            return error::InternalError("Create the matmul layer in the attention and ffn attention layers failed! ");
+        }
+    }
+
+    if(llama_layers_->w1_layers_.size() != config_->layer_num_ ||
+    llama_layers_->w2_layers_.size() != config_->layer_num_ ||
+    llama_layers_->w3_layers_.size() != config_->layer_num_ ){
+        std::cerr << "Create the matmul layer in the feedforward layers for the llama model failed! " << std::endl;
+        return error::InternalError("Create the matmul layer in the feedforward layers for the llama model failed! ");
+
+    }
+
+    for(int32_t i = 0;i < config_->layer_num_; i++){
+        if(!llama_layers_->w1_layers_.at(i) ||
+        !llama_layers_->w2_layers_.at(i) ||
+        !llama_layers_->w3_layers_.at(i)){
+            std::cerr << "Create the matmul layer in the feedforward layers for the llama model failed! " << std::endl;
+            return error::InternalError("Create the matmul layer in the feedforward layers for the llama model failed! ");
+        }
+    }
+
+    if(!llama_layers_->rope_layer_){
+        std::cerr << "Create the rope layer for the llama model failed! " << std::endl;
+        return error::InternalError("Create the rope layer for the llama model failed! ");
+    }
+
+    if(!llama_layers_->add_layer_){
+        std::cerr << "Create the add layer for the llama model failed!" << std::endl;
+        return error::InternalError("Create the add layer for the llama model failed!");
+    }
+
+    if(!llama_layers_->mha_layer_){
+        std::cerr << "Create the mha layer for the llama model failed!" << std::endl;
+        return error::InternalError("Create the mha layer for the llama model failed!");
+    }
+
+    if(!llama_layers_->swiglu_layer_){
+        std::cerr << "Create the swiglu layer for the llama model failed!" << std::endl;
+        return error::InternalError("Create the swiglu layer for the llama model failed!");
+    }
+
+    return error::Success();    
+
     return base::Status();
 }
 
@@ -288,8 +368,57 @@ void model::Qwen2Model::create_param_layers()
     // skip freqs_cos and freqs_sin weight
     pos += config_->seq_len_ * config_->head_size_;
 
+    qwen_layers_->cls_layer_ = 
+        std::make_shared<op::MatmulLayer>(device_type_, config_->vocab_size_, dim);
+    if(config_->is_shared_weight_){
+        //使用token embeding weight
+        qwen_layers_->cls_layer_->set_weight(
+            0,{config_->vocab_size_,dim},this->raw_model_data_->weight(0),cpu_device_type);
+    }else{
+        qwen_layers_->cls_layer_->set_weight(
+            0,{config_->vocab_size_,dim},this->raw_model_data_->weight(pos),cpu_device_type);
+    }
 
+    //创建rmsnorm1
+    size_t rmsnorm_pos = config_->dim_ * std::abs(config_->vocab_size_);
 
+    for(int32_t i=0;i<config_->layer_num_;i++){
+        std::shared_ptr<op::RmsnormLayer> rmsnorm_layer = 
+            std::make_shared<op::RmsnormLayer>(device_type_,config_->dim_);
+        const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
+        rmsnorm_layer->set_weight(0,{config_->dim_},weight_rmsnorm,cpu_device_type);
+        qwen_layers_->rmsnorm_layers_.push_back(rmsnorm_layer);
+        rmsnorm_pos += config_->dim_;
+    }
+
+    //rmsnorm2
+    //skip q、k、v、o
+    rmsnorm_pos += config_->layer_num_ * (config_->dim_ * config_->dim_ + config_->dim_);
+    rmsnorm_pos += config_->layer_num_ * (config_->dim_ * config_->kv_dim_ + config_->kv_dim_);
+    rmsnorm_pos += config_->layer_num_ * (config_->dim_ * config_->kv_dim_ + config_->kv_dim_);
+    rmsnorm_pos += config_->layer_num_ * config_->dim_ * config_->dim_;
+
+    for(int32_t i=0;i<config_->layer_num_;i++){
+        std::shared_ptr<op::RmsnormLayer> rmsnorm_layer = 
+            std::make_shared<op::RmsnormLayer>(device_type_,config_->dim_);
+        const void* weight_rmsnorm = raw_model_data_->weight(rmsnorm_pos);
+        rmsnorm_layer->set_weight(0,{config_->dim_},weight_rmsnorm,cpu_device_type);
+        qwen_layers_->rmsnorm_layers_.push_back(rmsnorm_layer);
+        rmsnorm_pos += config_->dim_;
+    }
+
+    //rmsnorm3
+    //skip ffn.w1,ffn.w2,ffn.w3
+    rmsnorm_pos += config_->layer_num_ * config_->hidden_dim_ * config_->dim_;
+    rmsnorm_pos += config_->layer_num_ * config_->hidden_dim_ * config_->dim_;
+    rmsnorm_pos += config_->layer_num_ * config_->hidden_dim_ * config_->dim_;
+
+    std::shared_ptr<op::RmsnormLayer> rmsnorm_final_layer = 
+        std::make_shared<op::RmsnormLayer>(device_type_, config_->dim_);
+    
+    const void* weight_rmsnorm_final = raw_model_data_->weight(rmsnorm_pos);
+    rmsnorm_final_layer->set_weight(0, {config_->dim_}, weight_rmsnorm_final, cpu_device_type);
+    llama_layers_->rmsnorm_layers_.push_back(rms_final_layer);
 }
 
 void model::Qwen2Model::create_nonparam_layers()
