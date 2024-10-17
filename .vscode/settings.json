@@ -74,6 +74,7 @@
         "list": "cpp",
         "iomanip": "cpp",
         "ranges": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "armadillo": "cpp"
     }
 }

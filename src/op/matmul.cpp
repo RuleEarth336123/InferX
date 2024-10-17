@@ -32,10 +32,12 @@ base::Status op::MatmulLayer::check() const
         return status;
     }
 
-    status = check_tensor_with_dim(scales_,device_type_,base::DataType::kDataTypeFp32,scales_.size());
-    if(!status){
-        LOG(ERROR) << "The scale tensor error in the matmul layer.";
-        return status;
+    if(is_quant_layer_){
+        status = check_tensor_with_dim(scales_,device_type_,base::DataType::kDataTypeFp32,scales_.size());
+        if(!status){
+            LOG(ERROR) << "The scale tensor error in the matmul layer.";
+            return status;
+        }
     }
 
     status = check_tensor_with_dim(get_output(0),device_type_,data_type_,dim0_);

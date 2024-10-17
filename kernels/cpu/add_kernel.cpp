@@ -2,7 +2,7 @@
 #include <armadillo>
 #include "base/base.h"
 
-#if 0
+#if 1
 void kernel::add_kernel_cpu(const tensor::Tensor &input1, const tensor::Tensor &input2, \
             const tensor::Tensor &output, void *stream)
 {

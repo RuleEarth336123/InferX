@@ -3,6 +3,24 @@
 #include "base/base.h"
 #include <cblas.h>
 namespace kernel {
+#if 1
+
+    void softmax_inplace_cpu(const tensor::Tensor& input, void* stream) {
+        int32_t size = static_cast<int32_t>(input.size());
+        const float* input_ptr = input.ptr<float>();
+
+        float max_value = *std::max_element(input_ptr, input_ptr + size);
+
+        arma::fvec input_mat(const_cast<float*>(input_ptr), size, false, true);
+        input_mat = arma::exp(input_mat - max_value);
+
+        float sum_value = arma::sum(input_mat);
+        input_mat = input_mat / sum_value;
+    }
+
+
+#else
+
 
     void softmax_inplace_cpu(const tensor::Tensor& input, void* stream) {
         int32_t size = static_cast<int32_t>(input.size());
@@ -27,7 +45,7 @@ namespace kernel {
         float one = 1.0f / sum_value;
         cblas_sscal(size, one, input_ptr, 1);
     }
-
+#endif
     // void softmax_inplace_cpu(const float* input_ptr, size_t size) {
     //     tensor::Tensor input(base::DataType::kDataTypeFp32, size);
     //     std::shared_ptr<base::Buffer> buffer = std::make_shared<base::Buffer>(

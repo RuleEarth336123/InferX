@@ -25,7 +25,7 @@ namespace kernel{
     using ScaleSumKernel = std::function<void(const tensor::Tensor& , const tensor::Tensor& , const tensor::Tensor& , int , int , int ,void* )>;
     using SoftmaxInplaceKernel = std::function<void(const tensor::Tensor&,void*)>;
     using RopeKernel = std::function<void(int32_t , int32_t , int32_t , \
-        const tensor::Tensor& ,const tensor::Tensor& , const tensor::Tensor& , void*)>;
+        const tensor::Tensor& ,const tensor::Tensor& , const tensor::Tensor& , const tensor::Tensor& , const tensor::Tensor& , void*)>;
     using SwigluKernel = std::function<void(const tensor::Tensor& , const tensor::Tensor& ,const tensor::Tensor&, void*)>;
     using MhaKernel = std::function<void(int32_t , int32_t , int32_t , int32_t , int32_t ,\
                 int32_t , int32_t , const tensor::Tensor& ,const tensor::Tensor& , \

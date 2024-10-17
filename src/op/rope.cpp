@@ -21,13 +21,13 @@ base::Status op::RopeLayer::check() const
         return status;
     }
 
-    status = check_tensor_with_dim(get_input(1),device_type_,data_type_,dim_);
+    status = check_tensor_with_dim(get_input(1),device_type_,data_type_,kv_dim_);
     if(!status){
         LOG(ERROR) << "The weight tensor 1 error in the rmsnorm layer.";
         return status;
     }
 
-    status = check_tensor_with_dim(get_input(2),device_type_,data_type_,dim_);
+    status = check_tensor_with_dim(get_input(2),device_type_,data_type_,1);
     if(!status){
         LOG(ERROR) << "The weight tensor 2 error in the rmsnorm layer.";
         return status;
@@ -48,8 +48,11 @@ base::Status op::RopeLayer::forward()
     Tensor input_k = get_input(1);
     Tensor input_pos = get_input(2);
 
+    tensor::Tensor sin_cache = this->get_input(3);
+    tensor::Tensor cos_cache = this->get_input(4);
+
     kernel::get_rope_kernel(device_type_)(
-        dim_,kv_dim_,head_size_,input_q,input_k,input_pos,nullptr
+        dim_,kv_dim_,head_size_,input_q,input_k,input_pos,sin_cache, cos_cache,nullptr
     );
 
     return base::error::Success();

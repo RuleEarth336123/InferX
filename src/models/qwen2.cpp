@@ -1,4 +1,5 @@
 #include "models/qwen2.h"
+#include "cpu/rope_kernel.h"
 #include <iostream>
 
 model::Qwen2Model::Qwen2Model(base::TokenizerType tokenizer_type,string token_path, \
@@ -22,7 +23,13 @@ base::Status model::Qwen2Model::init(base::DeviceType device_type)
     }
     
     init_mem();
+    if (device_type_ == base::DeviceType::kDeviceCPU) {
+        kernel::sin_cos_cache_calc_cpu(config_->head_size_, config_->seq_len_,
+                                    get_buffer(ModelBufferType::kSinCache).ptr<float>(),
+                                    get_buffer(ModelBufferType::kCosCache).ptr<float>());
+    } else {
 
+    }
     sampler_ = std::make_unique<ArgmaxSampler>(device_type_);
 
     return error::Success();
@@ -119,7 +126,7 @@ op::embedingOutput model::Qwen2Model::embedding(const std::vector<int> &tokens) 
 
     auto input_token_num = tensor::Tensor(base::DataType::kDataTypeInt32, static_cast<int32_t>(tokens.size()));
     LOG_IF(FATAL, !qwen_layers_->embedding_layer_)<< "The embedding layer in the llama2 model is null pointer.";
-    qwen_layers_->embedding_layer_->forward(input_tokens,input_token_num,input_embeddings);
+    //qwen_layers_->embedding_layer_->forward(input_tokens,input_token_num,input_embeddings);
     STATUS_CHECK(
         qwen_layers_->embedding_layer_->forward(input_tokens,input_token_num,input_embeddings)
     );
@@ -168,9 +175,15 @@ void model::Qwen2Model::init_mem()
 
     Tensor input_tokens(base::DataType::kDataTypeInt32, 1, true, alloc_cpu);
     Tensor input_embeddings(base::DataType::kDataTypeFp32, 1, config_->dim_, true, alloc);
-
     CHECK(insert_buffer(ModelBufferType::kInputTokens, input_tokens));
     CHECK(insert_buffer(ModelBufferType::kInputEmbeddings, input_embeddings));
+
+
+    tensor::Tensor sin_cache(base::DataType::kDataTypeFp32, config_->head_size_ * config_->seq_len_,true, alloc);
+    tensor::Tensor cos_cache(base::DataType::kDataTypeFp32, config_->head_size_ * config_->seq_len_,true, alloc);
+    CHECK(insert_buffer(ModelBufferType::kSinCache, sin_cache));
+    CHECK(insert_buffer(ModelBufferType::kCosCache, cos_cache));
+
 
     Tensor rms_output(base::DataType::kDataTypeFp32, config_->dim_, true, alloc);
     CHECK(insert_buffer(ModelBufferType::kOutputRMSNorm, rms_output));
@@ -547,7 +560,8 @@ void model::Qwen2Model::attention_qkv(int32_t layer_idx, const tensor::Tensor &p
     const auto& query_layer = qwen_layers_->wq_layers_.at(layer_idx);
     CHECK_NE(query_layer, nullptr) << "The query layer in the attention block is null pointer.";
     auto rmsnorm_output = get_buffer(ModelBufferType::kOutputRMSNorm);
-    STATUS_CHECK(query_layer->forward(rmsnorm_output, query));
+    query_layer->forward(rmsnorm_output, query);
+    //STATUS_CHECK(query_layer->forward(rmsnorm_output, query));
     // key
     const auto& key_layer = qwen_layers_->wk_layers_.at(layer_idx);
     CHECK_NE(key_layer, nullptr) << "The key layer in the attention block is null pointer.";
@@ -559,7 +573,8 @@ void model::Qwen2Model::attention_qkv(int32_t layer_idx, const tensor::Tensor &p
     // rope
     CHECK_NE(qwen_layers_->rope_layer_, nullptr)
         << "The RoPE layer in the attention block is null pointer.";
-    STATUS_CHECK(qwen_layers_->rope_layer_->forward(query, key, pos_tensor, tensor::Tensor{}));
+    STATUS_CHECK(qwen_layers_->rope_layer_->forward(\
+        query, key, pos_tensor, get_buffer(ModelBufferType::kSinCache),get_buffer(ModelBufferType::kCosCache), tensor::Tensor{}));
 
 }
 

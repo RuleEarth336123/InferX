@@ -1,6 +1,8 @@
 #include "op/layer.h"
 #include <cstdarg>
 #include "stdio.h"
+#include <algorithm>
+#include <numeric>
 
 op::BaseLayer::BaseLayer(base::DeviceType device_type, LayerType layer_type, \
     base::DataType data_type, std::string layer_name)
@@ -85,12 +87,51 @@ const tensor::Tensor &op::LayerParam::get_weight(int32_t idx) const
 
 base::Status op::LayerParam::set_weight(int32_t idx, const tensor::Tensor &weight)
 {
-    return base::error::FunctionNotImplement();
+    CHECK_GE(idx, 0);
+    CHECK_LT(idx, weights_.size());
+    CHECK(weight.data_type() == base::DataType::kDataTypeFp32);
+    if (!weight.is_empty()) {
+        CHECK(weight.device_type() == device_type_);
+    }
+    weights_.at(idx) = weight;
+    return base::error::Success();
 }
 
 base::Status op::LayerParam::set_weight(int32_t idx, const std::vector<int32_t> &dims, const void *weight_ptr, base::DeviceType device_type)
 {
-    return base::error::FunctionNotImplement();
+    CHECK_GE(idx, 0);
+    CHECK_LT(idx, weights_.size());
+    CHECK_NE(weight_ptr, nullptr);
+
+    size_t size = std::accumulate(dims.begin(), dims.end(), sizeof(float), std::multiplies<>());
+    std::shared_ptr<base::Buffer> buffer =
+        std::make_shared<base::Buffer>(size, nullptr, const_cast<void*>(weight_ptr), true);
+    if (device_type != base::DeviceType::kDeviceUnknown) {
+        buffer->set_device_type(device_type);
+    }
+
+    if (!is_quant_layer_) {
+        tensor::Tensor weight(base::DataType::kDataTypeFp32, dims);
+        weight.set_device_type(device_type);
+        CHECK(weight.assign(buffer));
+        weights_.at(idx) = weight;
+    } else {
+        // is quant layer
+        tensor::Tensor weight(base::DataType::kDataTypeInt8, dims);
+        weight.set_device_type(device_type);
+        CHECK(weight.assign(buffer));
+        weights_.at(idx) = weight;
+
+        const int32_t weight_size = static_cast<int32_t>(weight.size());
+        CHECK(weight_size % group_size_ == 0);
+
+        int32_t scale_nums = weight_size / group_size_;
+        scales_ = tensor::Tensor{base::DataType::kDataTypeFp32, scale_nums, false, nullptr,
+                                reinterpret_cast<float*>((int8_t*)weight_ptr + weight_size)};
+        scales_.set_device_type(device_type);
+    }
+
+    return base::error::Success();
 }
 void op::LayerParam::set_scales(const tensor::Tensor &scales)
 {

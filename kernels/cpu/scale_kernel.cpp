@@ -5,7 +5,7 @@
 void kernel::scale_inplace_cpu(const tensor::Tensor &tensor, float scale,void *stream)
 {
     CHECK(tensor.is_empty() == false);
-#if 0    
+#if 1   
     arma::fvec tensor_mat(const_cast<float*>(tensor.ptr<float>()),tensor.size(),false,
                             true);
     tensor_mat = tensor_mat * scale;
@@ -26,6 +26,7 @@ void kernel::scale_sum_kernel_cpu(const tensor::Tensor& value, const tensor::Ten
     CHECK_GE(size, scale.size());
     CHECK_EQ(size, output.size());
 
+#if 0
     float* value_data = const_cast<float*>(value.ptr<float>());
     const float* scale_data = const_cast<float*>(scale.ptr<float>());
     float* output_data = const_cast<float*>(output.ptr<float>());
@@ -40,4 +41,14 @@ void kernel::scale_sum_kernel_cpu(const tensor::Tensor& value, const tensor::Ten
         //累加
         cblas_saxpy(size,scale_factor,value_segment,1,output_data,1);
     }
+#endif
+
+    arma::fvec scale_vec(const_cast<float*>(scale.ptr<float>()), scale.size(), false, true);
+    arma::fvec output_vec(const_cast<float*>(output.ptr<float>()), output.size(), false, true);
+
+    for (int i = 0; i <= pos; ++i) {
+        arma::fvec value_vec(const_cast<float*>(value.ptr<float>()) + i * stride, value.size(), false,
+                            true);
+        output_vec += scale_vec[i] * value_vec;
+    }  
 }
