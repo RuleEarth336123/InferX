@@ -4,11 +4,11 @@
 #include <iostream>
 
 op::MatmulLayer::MatmulLayer(base::DeviceType device_type,int32_t dim0,int32_t dim1,bool is_quant_layer,bool has_bias)
-    : LayerParam(device_type, LayerType::kLayerMatmul, is_quant_layer,"Matmul")
+    : LayerParam(device_type, LayerType::kLayerMatmul, is_quant_layer,"Matmul"),
+    dim0_(dim0),  
+    dim1_(dim1),
+    has_bias_(has_bias)
 {
-    dim0_ = dim0;
-    dim1_ = dim1;
-    has_bias_ = has_bias;
     reset_input_size(1);
     reset_output_size(1);
     reset_weight_size(1);

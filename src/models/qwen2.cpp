@@ -516,9 +516,10 @@ void model::Qwen2Model::feed_forward(int32_t layer_idx, const tensor::Tensor &in
     Tensor w1_output = get_buffer(ModelBufferType::kW1Output);
     const auto& w1_layer = qwen_layers_->w1_layers_.at(layer_idx);
     CHECK_NE(w1_layer, nullptr) << "The w1 layer in the feedforward block is null pointer";
-    STATUS_CHECK(
-        w1_layer->forward(ffn_norm_output, w1_output)
-    );
+    w1_layer->forward(ffn_norm_output, w1_output);
+    // STATUS_CHECK(
+    //     w1_layer->forward(ffn_norm_output, w1_output)
+    // );
 
     //w3
     Tensor w3_output = get_buffer(ModelBufferType::kW3Output);

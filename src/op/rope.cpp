@@ -9,7 +9,7 @@ op::RopeLayer::RopeLayer(base::DeviceType device_type, int32_t dim, int32_t kv_d
     kv_dim_(kv_dim),
     head_size_(head_size)
 {
-    reset_input_size(3);
+    reset_input_size(5);
     reset_output_size(1);
 }
 
@@ -27,7 +27,7 @@ base::Status op::RopeLayer::check() const
         return status;
     }
 
-    status = check_tensor_with_dim(get_input(2),device_type_,data_type_,1);
+    status = check_tensor_with_dim(get_input(2),base::DeviceType::kDeviceCPU,base::DataType::kDataTypeInt32,1);
     if(!status){
         LOG(ERROR) << "The weight tensor 2 error in the rmsnorm layer.";
         return status;
