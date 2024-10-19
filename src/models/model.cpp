@@ -1,6 +1,7 @@
 #include "models/model.h"
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <cstdio>
 #include <iostream>
 model::Model::Model(base::TokenizerType tokenizer_type,base::ModelType model_type, std::string token_path, std::string model_path, bool is_quant_modedl)
@@ -98,9 +99,16 @@ base::Status model::Model::read_model_file()
         raw_model_data_ = std::make_shared<RowModelDataInt8>();
     }
 
-    fseek(file,0,SEEK_END);
-    raw_model_data_->file_size = ftell(file);
-    fclose(file);
+    struct stat sb;
+    if(fstat(fd, &sb)){
+        close(fd);
+        return error::ModelParseError();
+    }
+
+    // fseek(file,0,SEEK_END);
+    // raw_model_data_->file_size = ftell(file);
+    // fclose(file);
+    raw_model_data_->file_size = sb.st_size;
 
     raw_model_data_->fd = fd;
     raw_model_data_->data = mmap(nullptr,raw_model_data_->file_size,PROT_READ,MAP_PRIVATE,raw_model_data_->fd,0);
